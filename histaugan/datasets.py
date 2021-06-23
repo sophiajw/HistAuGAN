@@ -1,3 +1,5 @@
+# code adpated from https://github.com/HsinYingLee/MDMM
+
 import os
 import sys
 import torch.utils.data as data
