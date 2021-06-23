@@ -1,3 +1,5 @@
+# code adpated from https://github.com/HsinYingLee/MDMM
+
 import numpy as np
 
 import torch
