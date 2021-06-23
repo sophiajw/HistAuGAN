@@ -1,6 +1,8 @@
 # HistAuGAN
 
-GAN-based augmentation technique for histopathological images presented in the paper "Structure-Preserving Multi-Domain Stain Color Augmentation using Style-Transfer with Disentangled Representations" published at MICCAI 2021.
+GAN-based augmentation technique for histopathological images presented in the paper "Structure-Preserving Multi-Domain Stain Color Augmentation using Style-Transfer with Disentangled Representations" accepted at MICCAI 2021.
+* Quickly summarize architecture of HistAuGAN
+
 
 ## Demo
 

@@ -1,4 +1,6 @@
-import mdmm.networks as networks
+# code adpated from https://github.com/HsinYingLee/MDMM
+
+import histaugan.networks as networks
 import torch
 import torch.nn as nn
 import numpy as np

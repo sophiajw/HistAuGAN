@@ -8,13 +8,11 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
 from data_utils import Center0Dataset, TestCenterDataset, calculate_stats, ImbalancedDatasetSampler, MultipleCentersSeq, BalancedBatchSampler, OneCenterLoad
-from augmentations import basic_augmentations, color_augmentations, no_augmentations, mdmm_augmentations, geom_augmentations, normalization, color_augmentations_light
+from augmentations import basic_augmentations, color_augmentations, no_augmentations, gan_augmentations, geom_augmentations, normalization, color_augmentations_light
 from model import Classifier
 
 
 def main():
-#     pl.seed_everything(1234)
-
     # ------------
     # args
     # ------------
@@ -22,40 +20,43 @@ def main():
     parser.add_argument('--batch_size', default=128, type=int)
 
     parser.add_argument('--name', default=None, type=str)
-    parser.add_argument('--weighted', action='store_true', help='model trains with weighted loss when flag is set')
+    parser.add_argument('--weighted', action='store_true',
+                        help='model trains with weighted loss when flag is set')
 
     parser = pl.Trainer.add_argparse_args(parser)
     parser = Classifier.add_model_specific_args(parser)
 
     args = parser.parse_args()
 
-    # ––––––––––––––––––––––––– configure
-    name = args.name
-    mdmm_aug = False
-
+    # ------------
+    # configure type of augmentations
+    # ------------
     augmentations = {
         None: no_augmentations,
-        'no_augmentations': no_augmentations, 
-        'geom_augmentations': geom_augmentations, 
+        'no_augmentations': no_augmentations,
+        'geom_augmentations': geom_augmentations,
         'basic_augmentations': basic_augmentations,
         'color_augmentations': color_augmentations,
         'color_augmentations_light': color_augmentations_light,
-        'mdmm_augmentations': mdmm_augmentations,
+        'gan_augmentations': gan_augmentations,
     }
-    
+
+    name = args.name
     if name in augmentations.keys():
         aug = augmentations[name]
     else:
         aug = no_augmentations
-    
+
     print(aug)
 
-    if args.name == 'mdmm_augmentations':
+    gan_aug = False
+    if args.name == 'gan_augmentations':
         args.batch_size = 8
-        mdmm_aug = True
-        
-    print('mdmm_aug=', mdmm_aug)
-        
+        gan_aug = True
+
+    print('gan_aug=', gan_aug)
+
+    # evaluation over all five centers
     for center in [1, 2, 3, 4]:
 
         # ------------
@@ -64,15 +65,19 @@ def main():
         print('load data')
         data_dir = '/home/haicu/sophia.wagner/datasets/2101_camelyon17/'
         train_dataset = OneCenterLoad(data_dir, center, 'train', transform=aug)
-        val_dataset = OneCenterLoad(data_dir, center, 'val', transform=no_augmentations)
+        val_dataset = OneCenterLoad(
+            data_dir, center, 'val', transform=no_augmentations)
 
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=6)
-        val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=6)
+        train_loader = DataLoader(
+            train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=6)
+        val_loader = DataLoader(
+            val_dataset, batch_size=args.batch_size, num_workers=6)
 
         # ------------
         # model
         # ------------
-        model = Classifier(args.learning_rate, args.l2_reg, args.weighted, mdmm_aug=mdmm_aug, transform=no_augmentations)
+        model = Classifier(args.learning_rate, args.l2_reg, args.weighted,
+                           gan_aug=gan_aug, transform=no_augmentations)
 
         # ------------
         # training
@@ -81,11 +86,11 @@ def main():
         print(logger.log_dir)
 
         early_stop_callback = EarlyStopping(
-           monitor='val_metrics/PR_AUC',
-           min_delta=0.,
-           patience=20,
-           verbose=False,
-           mode='max'
+            monitor='val_metrics/PR_AUC',
+            min_delta=0.,
+            patience=20,
+            verbose=False,
+            mode='max'
         )
 
         checkpoint_callback = ModelCheckpoint(
@@ -96,22 +101,6 @@ def main():
             mode='max'
         )
 
-#         early_stop_callback = EarlyStopping(
-#            monitor='val_metrics/F1_tumor',
-#            min_delta=0.,
-#            patience=20,
-#            verbose=False,
-#            mode='max'
-#         )
-        
-#         checkpoint_callback = ModelCheckpoint(
-#             monitor='F1_tumor',
-#             dirpath=logger.log_dir + '/checkpoints/',
-#             filename='Classifier-Center0-{epoch:02d}-{F1:.4f}',
-#             save_top_k=3,
-#             mode='max'
-#         )
-
         trainer = pl.Trainer.from_argparse_args(args)
         trainer.logger = logger
         trainer.callbacks = [checkpoint_callback, early_stop_callback]
@@ -119,15 +108,16 @@ def main():
 
         trainer.fit(model, train_loader, val_loader)
         del train_dataset, val_dataset
-        
+
         # ------------
         # testing
         # ------------
-        model = Classifier.load_from_checkpoint(checkpoint_path=checkpoint_callback.best_model_path)
+        model = Classifier.load_from_checkpoint(
+            checkpoint_path=checkpoint_callback.best_model_path)
         print(checkpoint_callback.best_model_path)
 
-        test_centers = [[i,] for i in range(5)]
-#         test_centers.remove([center,])
+        # test on all centers except for the training center
+        test_centers = [[i, ] for i in range(5)]
         test_all = list(range(5))
         test_all.remove(center)
         test_centers.append(test_all)
@@ -136,13 +126,17 @@ def main():
         for c in test_centers:
             print(f'results for dataset {c}')
             if c == [center, ]:
-                test_dataset = OneCenterLoad('/home/haicu/sophia.wagner/datasets/2101_camelyon17/', center, 'val')
+                test_dataset = OneCenterLoad(
+                    '/home/haicu/sophia.wagner/datasets/2101_camelyon17/', center, 'val')
             else:
-                test_dataset = MultipleCentersSeq('/home/haicu/sophia.wagner/datasets/2101_camelyon17/', c)
-            test_loader = DataLoader(test_dataset, batch_size=128, num_workers=1)
+                test_dataset = MultipleCentersSeq(
+                    '/home/haicu/sophia.wagner/datasets/2101_camelyon17/', c)
+            test_loader = DataLoader(
+                test_dataset, batch_size=128, num_workers=1)
             result = trainer.test(test_dataloaders=test_loader)
             results.append(result)
 
+        # print final test results for each center except the training center
         print('center', center)
         print(test_centers)
         print('PR_AUC')
@@ -151,28 +145,6 @@ def main():
         print('F1_tumor')
         f1 = [round(res[0]['F1_tumor'], 4) for res in results]
         print(f1)
-
-    # tune over multiple parameter settings
-#     count = 0
-# #     for reg in [1e-4, 1e-5, 1e-6]:
-#     for d in [0.2, 0.5, 0.]:
-#         for w in [True, False]:
-# #         for lr in [1e-3, 1e-4, 1e-5]:
-#             model = Classifier(args.learning_rate, args.l2_reg, weighted=w, dropout=d)
-
-#             logger = TensorBoardLogger('lightning_logs', name=args.name)
-#             print(logger.log_dir)
-
-#             trainer = pl.Trainer.from_argparse_args(args)
-#             trainer.logger = logger
-#             trainer.log_every_n_steps = 10
-#             trainer.val_check_interval = 0.5
-#             trainer.fit(model, train_loader, val_loader)
-
-#             count +=1
-#             print('–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––')
-#             print(f'starting run {count}/6')
-#             print('–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––')
 
 
 if __name__ == '__main__':
