@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 import torch.utils.data as data
 from PIL import Image
 from torchvision.transforms import Compose, Resize, RandomCrop, CenterCrop, RandomHorizontalFlip, ToTensor, Normalize
@@ -26,10 +27,12 @@ class DummyDataset(data.Dataset):
             stats += f'{domains[i]}: {len(self.images[i])}'
             print(f'loaded {num_images} images for domain', domains[i])
         stats += ' images'
-        self.dataset_size = max([len(self.images[i]) for i in range(self.num_domains)])
+        self.dataset_size = max([len(self.images[i])
+                                for i in range(self.num_domains)])
 
         # setup image transformation
-        transforms = [Resize((opts.resize_size, opts.resize_size), Image.BICUBIC)]
+        transforms = [
+            Resize((opts.resize_size, opts.resize_size), Image.BICUBIC)]
         if opts.phase == 'train':
             transforms.append(RandomCrop(opts.crop_size))
         else:
@@ -45,7 +48,8 @@ class DummyDataset(data.Dataset):
     def __getitem__(self, index):
         cls = random.randint(0, self.num_domains - 1)
         c_org = np.zeros((self.num_domains,))
-        data = self.load_img(self.images[cls][random.randint(0, len(self.images[cls]) - 1)], self.input_dim)
+        data = self.load_img(self.images[cls][random.randint(
+            0, len(self.images[cls]) - 1)], self.input_dim)
         c_org[cls] = 1
         return data, torch.FloatTensor(c_org)
 
@@ -53,7 +57,8 @@ class DummyDataset(data.Dataset):
         img = Image.open(img_name).convert('RGB')
         img = self.transforms(img)
         if input_dim == 1:
-            img = img[0, ...] * 0.299 + img[1, ...] * 0.587 + img[2, ...] * 0.114
+            img = img[0, ...] * 0.299 + img[1, ...] * \
+                0.587 + img[2, ...] * 0.114
             img = img.unsqueeze(0)
         return img
 
@@ -76,10 +81,12 @@ class dataset_multi(data.Dataset):
             self.images[i] = [os.path.join(img_dir, x) for x in ilist]
             stats += '{}: {}'.format(domains[i], len(self.images[i]))
         stats += ' images'
-        self.dataset_size = max([len(self.images[i]) for i in range(self.num_domains)])
+        self.dataset_size = max([len(self.images[i])
+                                for i in range(self.num_domains)])
 
         # setup image transformation
-        transforms = [Resize((opts.resize_size, opts.resize_size), Image.BICUBIC)]
+        transforms = [
+            Resize((opts.resize_size, opts.resize_size), Image.BICUBIC)]
         if opts.phase == 'train':
             transforms.append(RandomCrop(opts.crop_size))
         else:
@@ -95,7 +102,8 @@ class dataset_multi(data.Dataset):
     def __getitem__(self, index):
         cls = random.randint(0, self.num_domains - 1)
         c_org = np.zeros((self.num_domains,))
-        data = self.load_img(self.images[cls][random.randint(0, len(self.images[cls]) - 1)], self.input_dim)
+        data = self.load_img(self.images[cls][random.randint(
+            0, len(self.images[cls]) - 1)], self.input_dim)
         c_org[cls] = 1
         return data, torch.FloatTensor(c_org)
 
@@ -103,7 +111,8 @@ class dataset_multi(data.Dataset):
         img = Image.open(img_name).convert('RGB')
         img = self.transforms(img)
         if input_dim == 1:
-            img = img[0, ...] * 0.299 + img[1, ...] * 0.587 + img[2, ...] * 0.114
+            img = img[0, ...] * 0.299 + img[1, ...] * \
+                0.587 + img[2, ...] * 0.114
             img = img.unsqueeze(0)
         return img
 
@@ -115,16 +124,19 @@ class dataset_single(data.Dataset):
     def __init__(self, opts, domain):
         self.dataroot = opts.dataroot
         domains = [chr(i) for i in range(ord('A'), ord('Z') + 1)]
-        images = os.listdir(os.path.join(self.dataroot, opts.phase + domains[domain]))
+        images = os.listdir(os.path.join(
+            self.dataroot, opts.phase + domains[domain]))
         self.img1 = images
-        self.img = [os.path.join(self.dataroot, opts.phase + domains[domain], x) for x in images]
+        self.img = [os.path.join(
+            self.dataroot, opts.phase + domains[domain], x) for x in images]
         self.size = len(self.img)
         self.input_dim = opts.input_dim
 
         self.c_org = np.zeros((opts.num_domains,))
         self.c_org[domain] = 1
         # setup image transformation
-        transforms = [Resize((opts.resize_size, opts.resize_size), Image.BICUBIC)]
+        transforms = [
+            Resize((opts.resize_size, opts.resize_size), Image.BICUBIC)]
         transforms.append(CenterCrop(opts.crop_size))
         transforms.append(ToTensor())
         transforms.append(Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]))
@@ -142,7 +154,8 @@ class dataset_single(data.Dataset):
         img = Image.open(img_name).convert('RGB')
         img = self.transforms(img)
         if input_dim == 1:
-            img = img[0, ...] * 0.299 + img[1, ...] * 0.587 + img[2, ...] * 0.114
+            img = img[0, ...] * 0.299 + img[1, ...] * \
+                0.587 + img[2, ...] * 0.114
             img = img.unsqueeze(0)
         return img, self.c_org
 
