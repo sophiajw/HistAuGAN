@@ -18,3 +18,7 @@ f1_score.pdf
 pr_auc.pdf
 gan_weights.pth
 ._*
+.gitignore
+experimental_results.ipynb
+test.png
+Visualize_augmentations.ipynb
