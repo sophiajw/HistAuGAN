@@ -9,7 +9,7 @@ The model (GAN network of MDMM [1]) is trained on the Camelyon17 dataset [2] wit
 
 ## Demo
 
-For a short demo of the augmentation technique HistAuGAN, have a look at the notebook `HistAuGAN.ipynb`. We demonstrate the image synthesis on diverse images from each of the five domains of the Camelyon17 dataset.
+For a demo of the augmentation technique HistAuGAN, check out the the notebook `HistAuGAN.ipynb`, which can be run in google colab. We demonstrate the image synthesis on diverse images from each of the five domains of the Camelyon17 dataset.
 
 ## Prerequisites
 * Python 3.7 or higher
@@ -28,7 +28,7 @@ pip install -r requirements.txt
 
 Our final model weights, trained on patches from the five domains of the Camelyon17 dataset can be downloaded [here](https://drive.google.com/file/d/1uObebkPgx_q6cZznGaUps-RfoSrUhNnD/view?usp=sharing).
 
-To apply the augmentation technique in your downstream task, copy the folder `histaugan` into your project and initialize the model in your networks initialization pass (see `model.py`, line 59ff). Then, you can add the following code to the forward pass in your network. 
+To apply the augmentation technique in your downstream task, copy the folder `histaugan` and the model weights `gan_weights.pth` into your project folder and initialize the model in your networks initialization pass (see `model.py`, line 59ff). Then, you can add the following code to the forward pass in your network. 
 ``` python
 # ----------------------
 # HistAuGAN augmentation
