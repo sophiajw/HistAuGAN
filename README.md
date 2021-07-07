@@ -12,10 +12,17 @@ The model (GAN network of MDMM [1]) is trained on the Camelyon17 dataset [2] wit
 For a short demo of the augmentation technique HistAuGAN, have a look at the notebook `HistAuGAN.ipynb`. We demonstrate the image synthesis on diverse images from each of the five domains of the Camelyon17 dataset.
 
 ## Prerequisites
-* Python 3.7
+* Python 3.7 or higher
 * PyTorch 1.7.1
+* torchvision 0.8.2
 
-The conda environment file `environment.yml` can be used with `conda env create --file environment.yml` to create a working virtual environment.
+You can create a minimal virtual environment with the file `requirements.txt`. For example with conda by running the following lines.
+``` bash
+conda create -n <env-name>
+conda activate <env-name>
+conda install pip
+pip install -r requirements.txt
+```
 
 ## Application
 
