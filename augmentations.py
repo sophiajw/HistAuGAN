@@ -114,7 +114,7 @@ class Args:
     num_domains = 5
     nz = 8
     # resume = False
-    resume = '/home/haicu/sophia.wagner/projects/stain_color/stain_aug/mdmm_model.pth'
+    resume = 'gan_weights.pth'
 
 
 opts = Args()
@@ -146,7 +146,7 @@ std_domains = [
 ]
 
 
-def generate_hist_augs(img, img_domain, model, z_content=None, same_attribute=False, new_domain=None, stats=None):
+def generate_hist_augs(img, img_domain, model, z_content=None, same_attribute=False, new_domain=None, stats=None, device=torch.device('cpu')):
     """
     Generates a new stain color for the input image img.
 
@@ -157,6 +157,7 @@ def generate_hist_augs(img, img_domain, model, z_content=None, same_attribute=Fa
     :same_attribute: [type: bool] indicates whether the attribute encoding of img or a randomly generated attribute are used
     :new_domain: either int in range(5) or torch.Tensor of shape (1, 5)
     :stats: (mean, std dev) of the latent space of HistAuGAN
+    :device: torch.device to map the tensors to
     """
     # compute content vector
     if z_content is None:
@@ -165,23 +166,23 @@ def generate_hist_augs(img, img_domain, model, z_content=None, same_attribute=Fa
     # compute attribute
     if same_attribute:
         mu, logvar = model.enc_a.forward(img.sub(0.5).mul(
-            2).unsqueeze(0), torch.eye(5)[img_domain].unsqueeze(0))
-        std = logvar.mul(0.5).exp_()
-        eps = torch.randn((std.size(0), std.size(1)))
+            2).unsqueeze(0), torch.eye(5)[img_domain].unsqueeze(0).to(device))
+        std = logvar.mul(0.5).exp_().to(device)
+        eps = torch.randn((std.size(0), std.size(1))).to(device)
         z_attr = eps.mul(std).add_(mu)
     elif same_attribute == False and stats is not None and new_domain in range(5):
-        z_attr = torch.randn((1, 8, )) * \
-            stats[1][new_domain] + stats[0][new_domain]
+        z_attr = (torch.randn((1, 8, )) * \
+            stats[1][new_domain] + stats[0][new_domain]).to(device)
     else:
-        z_attr = torch.randn((1, 8, ))
+        z_attr = torch.randn((1, 8, )).to(device)
 
     # determine new domain vector
     if isinstance(new_domain, int) and new_domain in range(5):
-        new_domain = torch.eye(5)[new_domain].unsqueeze(0)
+        new_domain = torch.eye(5)[new_domain].unsqueeze(0).to(device)
     elif isinstance(new_domain, torch.Tensor) and new_domain.shape == (1, 5):
-        new_domain = new_domain
+        new_domain = new_domain.to(device)
     else:
-        new_domain = torch.eye(5)[np.random.randint(5)].unsqueeze(0)
+        new_domain = torch.eye(5)[np.random.randint(5)].unsqueeze(0).to(device)
 
     # generate new histology image with same content as img
     out = model.gen(z_content, z_attr, new_domain).detach().squeeze(0)  # in range [-1, 1]

@@ -27,7 +27,7 @@ class Args:
     nThreads = 4
     num_domains = 5
     nz = 8
-    resume = '/home/haicu/sophia.wagner/projects/stain_color/stain_aug/mdmm_model.pth'
+    resume = '/home/haicu/sophia.wagner/projects/stain_color/stain_aug/gan_weights.pth'
 
 
 class Classifier(pl.LightningModule):
@@ -85,7 +85,7 @@ class Classifier(pl.LightningModule):
             # ----------------------
             # HistAuGAN augmentation
             # ----------------------
-            bs, _, img_h, img_w = x.shape
+            bs, _, _, _ = x.shape
             
             indices = torch.randint(2, (bs, ))  # augmentations are applied with probability 0.5
             num_aug = indices.sum()
