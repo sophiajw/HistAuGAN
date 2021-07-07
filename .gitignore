@@ -16,5 +16,5 @@ Stain_Normalization
 Stain_Normalization/*
 f1_score.pdf
 pr_auc.pdf
-mdmm_model.pth
+gan_weights.pth
 ._*
