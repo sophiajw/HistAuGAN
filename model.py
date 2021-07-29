@@ -10,7 +10,7 @@ from torch.nn import functional as F
 from torchvision import transforms
 
 from augmentations import basic_augmentations, color_augmentations, no_augmentations, gan_augmentations, mean_domains, std_domains
-from data_utils import plot_confusion_matrix
+from utils import plot_confusion_matrix
 from histaugan.model import MD_multi
 
 
