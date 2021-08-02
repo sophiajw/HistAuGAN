@@ -1,6 +1,6 @@
 # HistAuGAN
 
-GAN-based augmentation technique for histopathological images presented in the paper "Structure-Preserving Multi-Domain Stain Color Augmentation using Style-Transfer with Disentangled Representations" accepted at MICCAI 2021.
+GAN-based augmentation technique for histopathological images presented in the paper "Structure-Preserving Multi-Domain Stain Color Augmentation using Style-Transfer with Disentangled Representations" [[arxiv]](https://arxiv.org/abs/2107.12357) accepted at MICCAI 2021.
 
 The model (GAN network of MDMM [1]) is trained on the Camelyon17 dataset [2] with 5 different medical domains (see Fig. 1a). Two seperate encoder disentangle attribute and content of the input image. Therefore, histology patches can be mapped from one medical domain to another medical domain while preserving their histological structure (see Fig. 1b). We apply this as an augmentation technique during the training of a downstream task. This makes the resulting model robust to stain variations in the histology images. In particular, it outperforms standard HSV augmentation, which was proven to be more effective than stain color normalization methods [3]. Figure 1c demonstrates how HistAuGAN is used to synthesize new histology images while keeping the conent encoding fixed. 
 

@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, random_split
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
-from data_utils import Center0Dataset, TestCenterDataset, calculate_stats, ImbalancedDatasetSampler, MultipleCentersSeq, BalancedBatchSampler, OneCenterLoad
+from data_utils import Center0Dataset, TestCenterDataset, MultipleCentersSeq, OneCenterLoad
 from augmentations import basic_augmentations, color_augmentations, no_augmentations, gan_augmentations, geom_augmentations, normalization, color_augmentations_light
 from model import Classifier
 
@@ -62,8 +62,9 @@ def main():
         # ------------
         # data
         # ------------
+        # adapt this part to your data loading strategy and classes
         print('load data')
-        data_dir = '/home/haicu/sophia.wagner/datasets/2101_camelyon17/'
+        data_dir = '/storage/groups/haicu/datasets/2101_camelyon17/patches/'
         train_dataset = OneCenterLoad(data_dir, center, 'train', transform=aug)
         val_dataset = OneCenterLoad(
             data_dir, center, 'val', transform=no_augmentations)
@@ -126,11 +127,9 @@ def main():
         for c in test_centers:
             print(f'results for dataset {c}')
             if c == [center, ]:
-                test_dataset = OneCenterLoad(
-                    '/home/haicu/sophia.wagner/datasets/2101_camelyon17/', center, 'val')
+                test_dataset = OneCenterLoad(data_dir, center, 'val')
             else:
-                test_dataset = MultipleCentersSeq(
-                    '/home/haicu/sophia.wagner/datasets/2101_camelyon17/', c)
+                test_dataset = MultipleCentersSeq(data_dir, c)
             test_loader = DataLoader(
                 test_dataset, batch_size=128, num_workers=1)
             result = trainer.test(test_dataloaders=test_loader)
