@@ -368,7 +368,7 @@ def conv3x3(in_planes, out_planes):
 def gaussian_weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1 and classname.find('Conv') == 0:
-        torch.nn.init.normal_(m.weight, 0., 0.2)
+        torch.nn.init.normal_(m.weight, 0., 0.02)
 #     m.weight.data.normal_(0.0, 0.02)
 
 ####################################################################
