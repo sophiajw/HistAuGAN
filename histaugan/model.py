@@ -1,9 +1,11 @@
 # code adpated from https://github.com/HsinYingLee/MDMM
 
-import histaugan.networks as networks
 import torch
 import torch.nn as nn
 import numpy as np
+
+# import histaugan.networks as networks  # use this line when evaluating the trained model
+import networks
 
 device = torch.device(
     'cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -284,29 +286,14 @@ class MD_multi(nn.Module):
 
     def update_EG(self):
         # update G, Ec, Ea
-        #         print('changed order') # remove
         self.enc_c_opt.zero_grad()
         self.enc_a_opt.zero_grad()
         self.gen_opt.zero_grad()
-#         self.fake_random_img.sum().backward(retain_graph=True) # remove
         self.backward_EG()
         self.backward_G_alone()
-#         self.fake_random_img.sum().backward(retain_graph=True) # remove
         self.enc_c_opt.step()
-#         self.fake_random_img.sum().backward(retain_graph=True) # remove
         self.enc_a_opt.step()
-#         self.fake_random_img.sum().backward(retain_graph=True) # remove
         self.gen_opt.step()
-
-        # update G, Ec
-#         self.fake_random_img.sum().backward(retain_graph=True) # remove
-#         self.enc_c_opt.zero_grad()
-#         self.fake_random_img.sum().backward(retain_graph=True) # remove
-#         self.gen_opt.zero_grad()
-#         self.fake_random_img.sum().backward(retain_graph=True) # remove
-#         self.backward_G_alone()
-#         self.enc_c_opt.step()
-#         self.gen_opt.step()
 
     def backward_EG(self):
         # content Ladv for generator
@@ -366,7 +353,6 @@ class MD_multi(nn.Module):
 
     def backward_G_alone(self):
         # Ladv for generator
-        self.fake_random_img.sum().backward(retain_graph=True)  # remove
         pred_fake, pred_fake_cls = self.dis2.forward(self.fake_random_img)
         loss_G_GAN2 = 0
         for out_a in pred_fake:
@@ -374,12 +360,10 @@ class MD_multi(nn.Module):
             all_ones = torch.ones_like(outputs_fake)
             loss_G_GAN2 += nn.functional.binary_cross_entropy(
                 outputs_fake, all_ones)
-        loss_G_GAN2.sum().backward(retain_graph=True)  # remove
 
         # classification
         loss_G_cls2 = self.cls_loss(
             pred_fake_cls, self.c_org) * self.opts.lambda_cls_G
-        loss_G_cls2.sum().backward(retain_graph=True)  # remove
 
         # latent regression loss
         if self.concat:
@@ -392,15 +376,9 @@ class MD_multi(nn.Module):
                 torch.abs(self.z_attr_random_a - self.z_random)) * 10
             loss_z_L1_b = torch.mean(
                 torch.abs(self.z_attr_random_b - self.z_random)) * 10
-        loss_z_L1_a.sum().backward(retain_graph=True)  # remove
-        loss_z_L1_b.sum().backward(retain_graph=True)  # remove
 
         loss_z_L1 = loss_z_L1_a + loss_z_L1_b + loss_G_GAN2 + loss_G_cls2
-        loss_z_L1_b.backward(retain_graph=True)
-        loss_z_L1_a.backward(retain_graph=True)
-        loss_G_cls2.backward(retain_graph=True)
-        loss_G_GAN2.backward(retain_graph=True)
-        loss_z_L1.backward(retain_graph=True)  # without retain before
+        loss_z_L1.backward()
         self.l1_recon_z_loss = loss_z_L1_a.item() + loss_z_L1_b.item()
         self.gan2_loss = loss_G_GAN2.item()
         self.gan2_cls_loss = loss_G_cls2.item()
