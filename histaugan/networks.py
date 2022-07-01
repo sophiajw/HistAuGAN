@@ -47,19 +47,19 @@ class MD_E_attr(nn.Module):
         self.model = nn.Sequential(
             nn.ReflectionPad2d(3),
             nn.Conv2d(input_dim+c_dim, dim, 7, 1),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.ReflectionPad2d(1),
             nn.Conv2d(dim, dim*2, 4, 2),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.ReflectionPad2d(1),
             nn.Conv2d(dim*2, dim*4, 4, 2),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.ReflectionPad2d(1),
             nn.Conv2d(dim*4, dim*4, 4, 2),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.ReflectionPad2d(1),
             nn.Conv2d(dim*4, dim*4, 4, 2),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(dim*4, output_nc, 1, 1, 0))
 
@@ -163,20 +163,13 @@ class MD_G_multi_concat(nn.Module):
         self.dec4 = nn.Sequential(*dec4)
 
     def forward(self, x, z, c):
-        #     print('forward pass of gen')
-        #     print('input', z.shape)
-        #     print(z)
         out0 = self.dec_share(x)
-#     print('dec_share')
-#     print(out0.unique())
         z_img = z.view(z.size(0), z.size(1), 1, 1).expand(
             z.size(0), z.size(1), x.size(2), x.size(3))
         c = c.view(c.size(0), c.size(1), 1, 1)
         c = c.repeat(1, 1, out0.size(2), out0.size(3))
         x_c_z = torch.cat([out0, c, z_img], 1)
         out1 = self.dec1(x_c_z)
-#     print('dec1')
-#     print(out1)
         z_img2 = z.view(z.size(0), z.size(1), 1, 1).expand(
             z.size(0), z.size(1), out1.size(2), out1.size(3))
         x_and_z2 = torch.cat([out1, z_img2], 1)
@@ -219,9 +212,9 @@ class MD_G_multi(nn.Module):
 
         self.mlp = nn.Sequential(
             nn.Linear(nz+c_dim, 256),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.Linear(256, 256),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.Linear(256, tch_add*4))
         return
 
@@ -349,12 +342,12 @@ def get_norm_layer(layer_type='instance'):
 
 def get_non_linearity(layer_type='relu'):
     if layer_type == 'relu':
-        nl_layer = functools.partial(nn.ReLU, inplace=False)
+        nl_layer = functools.partial(nn.ReLU, inplace=True)
     elif layer_type == 'lrelu':
         nl_layer = functools.partial(
             nn.LeakyReLU, negative_slope=0.2, inplace=False)
     elif layer_type == 'elu':
-        nl_layer = functools.partial(nn.ELU, inplace=False)
+        nl_layer = functools.partial(nn.ELU, inplace=True)
     else:
         raise NotImplementedError(
             'nonlinearity activitation [%s] is not found' % layer_type)
@@ -368,16 +361,13 @@ def conv3x3(in_planes, out_planes):
 def gaussian_weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1 and classname.find('Conv') == 0:
-        torch.nn.init.normal_(m.weight, 0., 0.2)
-#     m.weight.data.normal_(0.0, 0.02)
+        m.weight.data.normal_(0.0, 0.02)
 
 ####################################################################
 # -------------------------- Basic Blocks --------------------------
 ####################################################################
 
 # The code of LayerNorm is modified from MUNIT (https://github.com/NVlabs/MUNIT)
-
-
 class LayerNorm(nn.Module):
     def __init__(self, n_out, eps=1e-5, affine=True):
         super(LayerNorm, self).__init__()
@@ -446,7 +436,7 @@ class ReLUINSConv2d(nn.Module):
         model += [nn.Conv2d(n_in, n_out, kernel_size=kernel_size,
                             stride=stride, padding=0, bias=True)]
         model += [nn.InstanceNorm2d(n_out, affine=False)]
-        model += [nn.ReLU(inplace=False)]
+        model += [nn.ReLU(inplace=True)]
         self.model = nn.Sequential(*model)
         self.model.apply(gaussian_weights_init)
 
