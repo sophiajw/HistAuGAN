@@ -10,7 +10,7 @@ from torch.nn import functional as F
 from torchvision import transforms
 
 from augmentations import basic_augmentations, color_augmentations, no_augmentations, gan_augmentations, mean_domains, std_domains
-from data_utils import plot_confusion_matrix
+from utils import plot_confusion_matrix
 from histaugan.model import MD_multi
 
 
@@ -50,8 +50,9 @@ class Classifier(pl.LightningModule):
             torch.nn.Linear(512, 1),
         )
 
+        self.weight = torch.ones(1)
         if weighted:
-            self.weight = 12.5
+            self.weight *= 12.5
 
         self.hp_metric = -1
         self.count = 0
@@ -86,8 +87,9 @@ class Classifier(pl.LightningModule):
             # HistAuGAN augmentation
             # ----------------------
             bs, _, _, _ = x.shape
-            
-            indices = torch.randint(2, (bs, ))  # augmentations are applied with probability 0.5
+
+            # augmentations are applied with probability 0.5
+            indices = torch.randint(2, (bs, ))
             num_aug = indices.sum()
 
             if num_aug > 0:
@@ -103,15 +105,17 @@ class Classifier(pl.LightningModule):
                 z_content = self.enc(x[indices.bool()])
 
                 # generate augmentations
-                x_aug = self.gen(z_content, z_attr, domain).detach()  # in range [-1, 1]
+                # in range [-1, 1]
+                x_aug = self.gen(z_content, z_attr, domain).detach()
 
                 x[indices.bool()] = x_aug
             # ----------------------
 
-        # for visualization, log the first image of the first 6 batches 
+        # for visualization, log the first image of the first 6 batches
         if self.count < 6:
             img = x[0].detach().add(1.).div(2)
-            self.logger.experiment.add_image(f'train_images/{self.count}', img, global_step=self.global_step)
+            self.logger.experiment.add_image(
+                f'train_images/{self.count}', img, global_step=self.global_step)
             self.count += 1
 
         # forward
@@ -136,13 +140,17 @@ class Classifier(pl.LightningModule):
         return {'loss': loss, 'outputs': logits, 'targets': y, 'cm': cm}
 
     def training_epoch_end(self, train_outputs):
-        logits = torch.cat([batch['outputs'] for batch in train_outputs]).squeeze(-1)
-        targets = torch.cat([batch['targets'] for batch in train_outputs]).squeeze(-1)
+        logits = torch.cat([batch['outputs']
+                           for batch in train_outputs]).squeeze(-1)
+        targets = torch.cat([batch['targets']
+                            for batch in train_outputs]).squeeze(-1)
 
         # compute AUC of precision-recalll-curve
-        pr_auc = - torch.ones(1)  # initialize (otherwise breaks in fast dev run) 
+        # initialize (otherwise breaks in fast dev run)
+        pr_auc = - torch.ones(1)
         if targets.sum() > 0.:
-            precision, recall, _ = metrics.precision_recall_curve(logits, targets)
+            precision, recall, _ = metrics.precision_recall_curve(
+                logits, targets)
             pr_auc = metrics.classification.auc(recall, precision)
         self.log('train_metrics/PR_AUC', pr_auc, on_epoch=True)
 
@@ -165,8 +173,10 @@ class Classifier(pl.LightningModule):
                 'confusion_matrix/train', cm_figure, global_step=self.global_step)
 
             # log F1 score
-            self.log('train_metrics/F1_normal', 2 * prec_n * recall_n / (prec_n + recall_n))
-            self.log('train_metrics/F1_tumor', 2 * prec_t * recall_t / (prec_t + recall_t))
+            self.log('train_metrics/F1_normal', 2 *
+                     prec_n * recall_n / (prec_n + recall_n))
+            self.log('train_metrics/F1_tumor', 2 *
+                     prec_t * recall_t / (prec_t + recall_t))
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
@@ -193,11 +203,14 @@ class Classifier(pl.LightningModule):
         return {'loss': loss, 'outputs': logits, 'targets': y, 'cm': cm}
 
     def validation_epoch_end(self, val_outputs):
-        logits = torch.cat([batch['outputs'] for batch in val_outputs]).squeeze(-1)
-        targets = torch.cat([batch['targets'] for batch in val_outputs]).squeeze(-1)
+        logits = torch.cat([batch['outputs']
+                           for batch in val_outputs]).squeeze(-1)
+        targets = torch.cat([batch['targets']
+                            for batch in val_outputs]).squeeze(-1)
 
         # compute AUC of precision-recalll-curve
-        pr_auc = - torch.ones(1)  # initialize (otherwise breaks in fast dev run) 
+        # initialize (otherwise breaks in fast dev run)
+        pr_auc = - torch.ones(1)
         if targets.sum() > 0.:
             precision, recall, _ = metrics.precision_recall_curve(
                 logits, targets)
@@ -213,9 +226,11 @@ class Classifier(pl.LightningModule):
             plt.xlabel('Recall')
             plt.ylabel('Precision')
             plt.legend()
-            self.logger.experiment.add_figure('prec-recall-curve', fig, global_step=self.global_step)
+            self.logger.experiment.add_figure(
+                'prec-recall-curve', fig, global_step=self.global_step)
         self.log('val_metrics/PR_AUC', pr_auc, on_epoch=True)
-        self.log('PR_AUC', pr_auc, on_epoch=True)  # logged separately for model checkpoint callback
+        # logged separately for model checkpoint callback
+        self.log('PR_AUC', pr_auc, on_epoch=True)
 
         # compute metrics based on confusion matrix
         cm = torch.stack([batch['cm'] for batch in val_outputs]).sum(dim=0)
@@ -231,12 +246,16 @@ class Classifier(pl.LightningModule):
             self.log('val_metrics/precision_tumor', prec_t, on_epoch=True)
             self.log('val_metrics/recall_tumor', recall_t, on_epoch=True)
 
-            cm_figure = plot_confusion_matrix(cm.cpu().numpy(), ['normal', 'tumor'])
-            self.logger.experiment.add_figure('confusion_matrix/val', cm_figure, global_step=self.global_step)
+            cm_figure = plot_confusion_matrix(
+                cm.cpu().numpy(), ['normal', 'tumor'])
+            self.logger.experiment.add_figure(
+                'confusion_matrix/val', cm_figure, global_step=self.global_step)
 
             # log F1 score
-            self.log('val_metrics/F1_normal', 2 * prec_n * recall_n / (prec_n + recall_n))
-            self.log('val_metrics/F1_tumor', 2 * prec_t * recall_t / (prec_t + recall_t))
+            self.log('val_metrics/F1_normal', 2 * prec_n *
+                     recall_n / (prec_n + recall_n))
+            self.log('val_metrics/F1_tumor', 2 * prec_t *
+                     recall_t / (prec_t + recall_t))
             self.log('F1_tumor', 2 * prec_t * recall_t / (prec_t + recall_t))
 
         # compute area under the precision-recall curve
@@ -246,7 +265,7 @@ class Classifier(pl.LightningModule):
             self.hp_metric = pr_auc.item()
 
     def test_step(self, batch, batch_idx):
-        x, y = batch 
+        x, y = batch
 
         # forward pass
         y_hat = self.forward(x)
@@ -261,7 +280,8 @@ class Classifier(pl.LightningModule):
         preds = torch.round(logits)
 
         # log accuracy
-        self.log('test_metrics/acc', metrics.classification.accuracy(preds, y, num_classes=2), on_epoch=True)
+        self.log('test_metrics/acc', metrics.classification.accuracy(preds,
+                 y, num_classes=2), on_epoch=True)
 
         # log tp, fp, tn, fn
         cm = metrics.confusion_matrix(preds, y, num_classes=2)
@@ -269,11 +289,12 @@ class Classifier(pl.LightningModule):
         return {'loss': loss, 'outputs': logits, 'targets': y, 'cm': cm}
 
     def test_epoch_end(self, test_outputs):
-        logits = torch.cat([batch['outputs']for batch in test_outputs]).squeeze(-1)
-        targets = torch.cat([batch['targets']or batch in test_outputs]).squeeze(-1)
+        logits = torch.cat([batch['outputs'] for batch in test_outputs]).squeeze(-1)
+        targets = torch.cat([batch['targets'] for batch in test_outputs]).squeeze(-1)
 
         # compute AUC of precision-recalll-curve
-        pr_auc = - torch.ones(1)  # initialize (otherwise breaks in fast dev run) ß
+        # initialize (otherwise breaks in fast dev run) ß
+        pr_auc = - torch.ones(1)
         if targets.sum() > 0.:
             precision, recall, _ = metrics.precision_recall_curve(
                 logits, targets)
@@ -299,8 +320,10 @@ class Classifier(pl.LightningModule):
             'confusion_matrix/test', cm_figure, global_step=self.global_step)
 
         # log F1 score
-        self.log('test_metrics/F1_normal', 2 * prec_n * recall_n / (prec_n + recall_n))
-        self.log('test_metrics/F1_tumor', 2 * prec_t * recall_t / (prec_t + recall_t))
+        self.log('test_metrics/F1_normal', 2 *
+                 prec_n * recall_n / (prec_n + recall_n))
+        self.log('test_metrics/F1_tumor', 2 * prec_t *
+                 recall_t / (prec_t + recall_t))
 
         return {
             'precision_normal': prec_n,

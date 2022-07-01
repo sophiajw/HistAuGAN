@@ -1,6 +1,6 @@
 # HistAuGAN
 
-GAN-based augmentation technique for histopathological images presented in the paper "Structure-Preserving Multi-Domain Stain Color Augmentation using Style-Transfer with Disentangled Representations" accepted at MICCAI 2021.
+GAN-based augmentation technique for histopathological images presented in the paper "Structure-Preserving Multi-Domain Stain Color Augmentation using Style-Transfer with Disentangled Representations" [[arxiv]](https://arxiv.org/abs/2107.12357) accepted at MICCAI 2021.
 
 The model (GAN network of MDMM [1]) is trained on the Camelyon17 dataset [2] with 5 different medical domains (see Fig. 1a). Two seperate encoder disentangle attribute and content of the input image. Therefore, histology patches can be mapped from one medical domain to another medical domain while preserving their histological structure (see Fig. 1b). We apply this as an augmentation technique during the training of a downstream task. This makes the resulting model robust to stain variations in the histology images. In particular, it outperforms standard HSV augmentation, which was proven to be more effective than stain color normalization methods [3]. Figure 1c demonstrates how HistAuGAN is used to synthesize new histology images while keeping the conent encoding fixed. 
 
@@ -9,19 +9,26 @@ The model (GAN network of MDMM [1]) is trained on the Camelyon17 dataset [2] wit
 
 ## Demo
 
-For a short demo of the augmentation technique HistAuGAN, have a look at the notebook `HistAuGAN.ipynb`. We demonstrate the image synthesis on diverse images from each of the five domains of the Camelyon17 dataset.
+For a demo of the augmentation technique HistAuGAN, check out the the notebook `HistAuGAN.ipynb`, which can be run in google colab. We demonstrate the image synthesis on diverse images from each of the five domains of the Camelyon17 dataset.
 
 ## Prerequisites
-* Python 3.7
+* Python 3.7 or higher
 * PyTorch 1.7.1
+* torchvision 0.8.2
 
-The conda environment file `environment.yml` can be used with `conda env create --file environment.yml` to create a working virtual environment.
+You can create a minimal virtual environment with the file `requirements.txt`. For example with conda by running the following lines.
+``` bash
+conda create -n <env-name>
+conda activate <env-name>
+conda install pip
+pip install -r requirements.txt
+```
 
 ## Application
 
 Our final model weights, trained on patches from the five domains of the Camelyon17 dataset can be downloaded [here](https://drive.google.com/file/d/1uObebkPgx_q6cZznGaUps-RfoSrUhNnD/view?usp=sharing).
 
-To apply the augmentation technique in your downstream task, copy the folder `histaugan` into your project and initialize the model in your networks initialization pass (see `model.py`, line 59ff). Then, you can add the following code to the forward pass in your network. 
+To apply the augmentation technique in your downstream task, copy the folder `histaugan` and the model weights `gan_weights.pth` into your project folder and initialize the model in your networks initialization pass (see `model.py`, line 59ff). Then, you can add the following code to the forward pass in your network. 
 ``` python
 # ----------------------
 # HistAuGAN augmentation
