@@ -19,7 +19,6 @@ class MD_multi(nn.Module):
         lr_dcontent = lr/2.5
         self.nz = 8
 
-        self.isDcontent = opts.isDcontent
         if opts.concat == 1:
             self.concat = True
         else:
@@ -51,7 +50,6 @@ class MD_multi(nn.Module):
             self.enc_a.parameters(), lr=lr, betas=(0.5, 0.999), weight_decay=0.0001)
         self.gen_opt = torch.optim.Adam(
             self.gen.parameters(), lr=lr, betas=(0.5, 0.999), weight_decay=0.0001)
-        # if self.isDcontent:
         self.disContent = networks.MD_Dis_content(c_dim=opts.num_domains)
         self.disContent_opt = torch.optim.Adam(self.disContent.parameters(
         ), lr=lr/2.5, betas=(0.5, 0.999), weight_decay=0.0001)
@@ -92,8 +90,7 @@ class MD_multi(nn.Module):
         self.enc_c.cuda(self.gpu)
         self.enc_a.cuda(self.gpu)
         self.gen.cuda(self.gpu)
-        if self.isDcontent:
-            self.disContent.cuda(self.gpu)
+        self.disContent.cuda(self.gpu)
 
     def get_z_random(self, batchSize, nz, random_type='gauss'):
         z = torch.randn(batchSize, nz)
@@ -297,8 +294,7 @@ class MD_multi(nn.Module):
 
     def backward_EG(self):
         # content Ladv for generator
-        if self.opts.isDcontent:
-            loss_G_GAN_content = self.backward_G_GAN_content(self.z_content)
+        loss_G_GAN_content = self.backward_G_GAN_content(self.z_content)
 
         # Ladv for generator
         pred_fake, pred_fake_cls = self.dis1.forward(self.fake_encoded_img)
@@ -332,14 +328,12 @@ class MD_multi(nn.Module):
 
         loss_G = loss_G_GAN + loss_G_cls + loss_G_L1_self + \
             loss_G_L1_cc + loss_kl_zc + loss_kl_za
-        if self.opts.isDcontent:
-            loss_G += loss_G_GAN_content
+        loss_G += loss_G_GAN_content
         loss_G.backward(retain_graph=True)
 
         self.gan_loss = loss_G_GAN.item()
         self.gan_cls_loss = loss_G_cls.item()
-        if self.opts.isDcontent:
-            self.gan_loss_content = loss_G_GAN_content.item()
+        self.gan_loss_content = loss_G_GAN_content.item()
         self.kl_loss_zc = loss_kl_zc.item()
         self.kl_loss_za = loss_kl_za.item()
         self.l1_self_rec_loss = loss_G_L1_self.item()
@@ -441,8 +435,7 @@ class MD_multi(nn.Module):
         if train:
             self.dis1.load_state_dict(checkpoint['dis1'])
             self.dis2.load_state_dict(checkpoint['dis2'])
-            if self.isDcontent:
-                self.disContent.load_state_dict(checkpoint['disContent'])
+            self.disContent.load_state_dict(checkpoint['disContent'])
         self.enc_c.load_state_dict(checkpoint['enc_c'])
         self.enc_a.load_state_dict(checkpoint['enc_a'])
         self.gen.load_state_dict(checkpoint['gen'])
@@ -450,9 +443,7 @@ class MD_multi(nn.Module):
         if train:
             self.dis1_opt.load_state_dict(checkpoint['dis1_opt'])
             self.dis2_opt.load_state_dict(checkpoint['dis2_opt'])
-            if self.isDcontent:
-                self.disContent_opt.load_state_dict(
-                    checkpoint['disContent_opt'])
+            self.disContent_opt.load_state_dict(checkpoint['disContent_opt'])
             self.enc_c_opt.load_state_dict(checkpoint['enc_c_opt'])
             self.enc_a_opt.load_state_dict(checkpoint['enc_a_opt'])
             self.gen_opt.load_state_dict(checkpoint['gen_opt'])

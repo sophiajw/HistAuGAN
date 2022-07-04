@@ -109,7 +109,6 @@ class Args:
     dataroot = 'data'
     gpu = 1
     input_dim = 3
-    isDcontent = False
     nThreads = 4
     num_domains = 5
     nz = 8

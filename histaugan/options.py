@@ -52,7 +52,7 @@ class TrainOptions():
         self.parser.add_argument('--dis_spectral_norm', action='store_true',
                                  help='use spectral normalization in discriminator')
         self.parser.add_argument(
-            '--lr_policy', type=str, default='lambda', help='type of learn rate decay')
+            '--lr_policy', type=str, default='step', help='type of learn rate decay')  # MDMM used lambda
         self.parser.add_argument(
             '--n_ep', type=int, default=1200, help='number of epochs')  # 400 * d_iter
         self.parser.add_argument('--n_ep_decay', type=int, default=600,
@@ -64,7 +64,6 @@ class TrainOptions():
         self.parser.add_argument('--lambda_rec', type=float, default=10)
         self.parser.add_argument('--lambda_cls', type=float, default=1.0)
         self.parser.add_argument('--lambda_cls_G', type=float, default=5.0)
-        self.parser.add_argument('--isDcontent', action='store_true')
         self.parser.add_argument('--gpu', type=int, default=0, help='gpu')
 
     def parse(self):
@@ -112,7 +111,6 @@ class TestOptions():
                                  help='specified the dir of saved models for resume the training')
         self.parser.add_argument('--gpu', type=int, default=0, help='gpu')
 
-        self.parser.add_argument('--isDcontent', action='store_true')
 
     def parse(self):
         self.opt = self.parser.parse_args()
