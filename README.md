@@ -57,6 +57,16 @@ if num_aug > 0:
 # ----------------------
 ```
 
+## Train HistAuGAN
+
+You can retrain the model on your dataset with the following line.
+```shell
+python histaugan/train.py --dataroot <path/to/your/data> --name <log-name> --num_domains <int> --batch_size <batch_size>
+```
+Your data should be stored in `<path/to/your/data>` in folders `trainA`, `trainB`, and so on, depending on the number of
+domains. Alternatively, you can store the paths to the images in txt-files names accordingly, i.e., `trainA.txt`, 
+`trainB.txt`, and so on.
+
 
 ## Cite
 
