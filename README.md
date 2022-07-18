@@ -13,8 +13,8 @@ For a demo of the augmentation technique HistAuGAN, check out the the notebook `
 
 ## Prerequisites
 * Python 3.7 or higher
-* PyTorch 1.7.1
-* torchvision 0.8.2
+* PyTorch 1.7.1 or higher
+* torchvision 0.8.2 or higher
 
 You can create a minimal virtual environment with the file `requirements.txt`. For example with conda by running the following lines.
 ``` bash
